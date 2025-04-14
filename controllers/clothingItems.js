@@ -1,134 +1,116 @@
-const ClothingItems = require("../models/clothingItems"); // Import the ClothingItems model
-const BadRequestError = require("../custom_errors/bad-request-err");
-const NotFoundError = require("../custom_errors/not-found-err");
-const ForbiddenError = require("../custom_errors/forbidden-err");
+const ClothingItem = require("../models/clothingItem");
+const BadRequestError = require("../customErrors/bad-request-error");
+const NotFoundError = require("../customErrors/not-found-error");
+const ForbiddenError = require("../customErrors/forbidden-error");
 
-// route handler to create a new item
-const createItem = (req, res, next) => {
-  console.log(req);
-  console.log(req.body);
+const getClothingItem = (req, res, next) => {
+  ClothingItem.find({})
+    .then((items) => {
+      res.send(items);
+    })
+    .catch((err) => {
+      next(err);
+    });
+};
 
+const createClothingItem = (req, res, next) => {
   const { name, weather, imageUrl } = req.body;
-  const userId = req.user._id; // Access the hardcoded user ID from app.js
-
-  ClothingItems.create({
+  ClothingItem.create({
     name,
     weather,
     imageUrl,
-    owner: userId,
+    owner: req.user._id,
   })
     .then((item) => {
-      // if successful, send the item back
-      console.log(item);
       res.send({ data: item });
     })
-    .catch((e) => {
-      // if not successful, send an error message
-      console.error(e);
-      if (e.name === "ValidationError") {
-        next(new BadRequestError("Invalid data provided"));
-      } else {
-        next(e);
-      }
-    });
-};
-
-// route handler to get all items
-const getItems = (req, res, next) => {
-  ClothingItems.find({})
-    .then((items) => res.send(items))
-    .catch((e) => {
-      console.error(e);
-      next(e);
-    });
-};
-
-// route handler to delete an item
-const deleteItem = (req, res, next) => {
-  const { itemId } = req.params; // Get the item ID from the request parameters
-  const owner = req.user._id; // Get the owner ID from the request user
-
-  ClothingItems.findById(itemId)
-    .orFail() // If the item is not found, throw an error to .catch() block
-    .then((item) => {
-      console.log(item);
-      if (String(item.owner) !== owner) {
-        // Check if the owner of the item matches the user making the request
-        throw new ForbiddenError("You are not authorized to delete this item");
-      }
-      return item
-        .deleteOne() // If the owner matches, delete the item
-        .then(() =>
-          // Send a success message
-          res.send({ message: "Item deleted", data: item })
+    .catch((err) => {
+      console.error(err);
+      if (err.name === "ValidationError") {
+        next(
+          new BadRequestError("Invalid data provided for creating an item.")
         );
-    })
-    .catch((e) => {
-      console.error(e);
-      if (e.name === "DocumentNotFoundError") {
-        next(new NotFoundError("Item not found"));
-      } else if (e.name === "CastError") {
-        next(new BadRequestError("Invalid ID"));
       } else {
-        next(e);
+        next(err);
       }
     });
 };
 
-// Like an item by ID
+const deleteClothingItem = (req, res, next) => {
+  const { itemId } = req.params;
+  const { _id: userId } = req.user;
+
+  ClothingItem.findById(itemId)
+    .orFail(() => {
+      throw new NotFoundError("Item not found");
+    })
+    .then((item) => {
+      if (item.owner.toString() !== userId) {
+        throw new ForbiddenError(
+          "You do not have permission to delete this item"
+        );
+      }
+      return ClothingItem.findByIdAndDelete(itemId).then(() =>
+        res.send({ message: "Item successfully deleted" })
+      );
+    })
+    .catch((err) => {
+      if (err.name === "CastError") {
+        next(new BadRequestError("Invalid item ID format"));
+      } else {
+        next(err);
+      }
+    });
+};
+
 const likeItem = (req, res, next) => {
-  const userId = req.user._id; // Access the hardcoded user ID from app.js
-
-  ClothingItems.findByIdAndUpdate(
+  ClothingItem.findByIdAndUpdate(
     req.params.itemId,
-    { $addToSet: { likes: userId } }, // Add _id to the array if it's not there yet
+    { $addToSet: { likes: req.user._id } },
     { new: true }
   )
-    .orFail()
+    .orFail(() => {
+      throw new NotFoundError("Item not found");
+    })
     .then((item) => {
       res.setHeader("Content-Type", "application/json");
       res.send({ data: item });
     })
-    .catch((e) => {
-      console.error(e);
-      if (e.name === "DocumentNotFoundError") {
-        next(new NotFoundError("Item not found"));
-      } else if (e.name === "CastError") {
-        next(new BadRequestError("Invalid ID"));
+    .catch((err) => {
+      if (err.name === "CastError") {
+        next(new BadRequestError("Invalid item ID format"));
       } else {
-        next(e);
+        next(err);
       }
     });
 };
 
-// Dislike an item by ID
 const dislikeItem = (req, res, next) => {
-  ClothingItems.findByIdAndUpdate(
+  ClothingItem.findByIdAndUpdate(
     req.params.itemId,
-    { $pull: { likes: req.user._id } }, // Remove _id from the array
+    { $pull: { likes: req.user._id } },
     { new: true }
   )
-    .orFail()
+    .orFail(() => {
+      throw new NotFoundError("Item not found");
+    })
     .then((item) => {
       res.setHeader("Content-Type", "application/json");
-      res.send({ data: item });
+      res.send(item);
     })
-    .catch((e) => {
-      console.error(e);
-      if (e.name === "DocumentNotFoundError") {
-        next(new NotFoundError("Item not found"));
-      } else if (e.name === "CastError") {
-        next(new BadRequestError("Invalid ID"));
+    .catch((err) => {
+      if (err.name === "CastError") {
+        next(new BadRequestError("Invalid item ID format"));
       } else {
-        next(e);
+        next(err);
       }
     });
 };
 
 module.exports = {
-  createItem,
-  getItems,
-  deleteItem,
+  getClothingItem,
+  createClothingItem,
+  deleteClothingItem,
   likeItem,
   dislikeItem,
 };

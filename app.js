@@ -1,26 +1,23 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-// const cors = require("cors");
-// require("dotenv").config();
-// const { errors } = require("celebrate");
-const mainRouter = require("./routes/index");
+const cors = require("cors");
+const { errors } = require("celebrate");
+const routes = require("./routes");
 const errorHandler = require("./middlewares/error-handler");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
-const { JWT_SECRET } = require("./utils/config");
 
-const app = express(); // Initialize the Express application
-const { PORT = 3001 } = process.env; // Set the port for the server
+const app = express();
+const { PORT = 3001 } = process.env;
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/wtwr_db")
-  .then(() => {
-    console.log("Connected to DB");
-  })
+  .then()
   .catch(console.error);
 
-app.use(express.json()); // Middleware to parse JSON bodies. place before calling routes
 app.use(cors());
-app.use(requestLogger); // enable the request logger before all route handlers
+
+app.use(express.json());
 
 app.get("/crash-test", () => {
   setTimeout(() => {
@@ -28,12 +25,16 @@ app.get("/crash-test", () => {
   }, 0);
 });
 
-app.use("/", mainRouter); // Use the main router for all routes
-app.use(errorLogger); // enable the error logger after the route handlers and before the error handlers
-app.use(errors()); // Celebrate error handler
-app.use(errorHandler); // Centralized error handler
+app.use(requestLogger);
+
+app.use(routes);
+
+app.use(errorLogger);
+
+app.use(errors());
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`JWT_SECRET is set to: ${JWT_SECRET}`);
+  console.log(`Server running on port ${PORT}`);
 });
