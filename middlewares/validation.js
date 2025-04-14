@@ -1,4 +1,4 @@
-const { Joi, celebrate } = require("celebrate");
+// const { Joi, celebrate } = require("celebrate");
 const validator = require("validator");
 
 // Custom URLs validation function for avatars and item images
