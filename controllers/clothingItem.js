@@ -1,4 +1,4 @@
-const ClothingItems = require("../models/clothingItems"); // Import the ClothingItems model
+const ClothingItems = require("../models/clothingItem"); // Import the ClothingItems model
 
 const BadRequestError = require("../custom_errors/bad-request-err");
 const NotFoundError = require("../custom_errors/not-found-err");
