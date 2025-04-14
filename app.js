@@ -17,6 +17,13 @@ mongoose
 
 app.use(cors());
 
+if (process.env.NODE_ENV === "test") {
+  app.use((req, res, next) => {
+    req.user = { _id: "test-user-id" };
+    next();
+  });
+}
+
 app.use(express.json());
 
 app.get("/crash-test", () => {
