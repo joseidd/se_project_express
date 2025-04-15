@@ -1,27 +1,39 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const mainRouter = require("./routes/index");
+const cors = require("cors");
+const { errors } = require("celebrate");
+const routes = require("./routes");
 
 const app = express();
 const { PORT = 3001 } = process.env;
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/wtwr_db")
-  .then(() => {
-    console.log("Connected to DB");
-  })
+  .then()
   .catch(console.error);
+
+app.use(cors());
+
+app.use(express.json());
 
 app.use((req, res, next) => {
   req.user = {
-    _id: "67f455406143076a1289fd72",
+    _id: "5d8b8592978f8bd833ca8133",
   };
   next();
 });
 
-app.use(express.json());
-app.use("/", mainRouter);
+app.get("/crash-test", () => {
+  setTimeout(() => {
+    throw new Error("Server will crash now");
+  }, 0);
+});
+
+app.use(routes);
+
+app.use(errors());
 
 app.listen(PORT, () => {
-  console.log(`Listening on ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
