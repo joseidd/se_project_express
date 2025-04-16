@@ -1,22 +1,18 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 
-const { ObjectId } = mongoose.Schema.Types;
-
-const clothingItemSchema = new mongoose.Schema({
+const clothingSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
     minlength: 2,
     maxlength: 30,
   },
-
   weather: {
     type: String,
     required: true,
     enum: ["hot", "warm", "cold"],
   },
-
   imageUrl: {
     type: String,
     required: true,
@@ -27,25 +23,20 @@ const clothingItemSchema = new mongoose.Schema({
       message: "You must enter a valid URL",
     },
   },
-
   owner: {
-    type: ObjectId,
-    required: true,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "user",
+    required: true,
   },
-
-  likes: [
-    {
-      type: ObjectId,
-      required: true,
-      default: [],
-    },
-  ],
-
+  likes: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "user",
+    default: [],
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-module.exports = mongoose.model("clothingItem", clothingItemSchema);
+module.exports = mongoose.model("item", clothingSchema);
